@@ -1,53 +1,70 @@
-name: Deploying Angular App to S3 and CloudFront
+name: Deploy Angular App to S3 and CloudFront
 
 on:
   push:
-    branches: 
-      - 'dev'
+    branches:
+      - "dev"
 
 jobs:
   build:
     name: Build Angular App
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: 'v20.10.0'
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-    - name: Install packages and dependencies
-      run: npm install -g @angular/cli && npm install
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
 
-    - name: Run build
-      run: ng build
+      - name: Install Dependencies
+        run: npm install
 
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: artifacts
-        path: Smooth-Operators/dist/final-ui/
+      - name: Build Angular App
+        run: yarn build
+
+      - name: Archive Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifacts
+          path: dist/final-ui
 
   deploy:
-    name: Development to S3 and CloudFront
+    name: Deploy to S3 and CloudFront
     needs: build
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-    - uses: actions/download-artifact@v3
-      with:
-        name: artifacts
-        path: Smooth-Operators/dist/final-ui/
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: artifacts
+          path: dist/final-ui
 
-    - uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+      - name: Set up Node.js for Serverless Framework
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
 
-    - name: S3 Sync
-      run: aws s3 sync Smooth-Operators/dist/final-ui/ s3://${{ secrets.S3_BUCKET }}
-      
-    - name: Cloudfront Invalidation
-      run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+      - name: Install AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install awscli
+
+      - name: Configure AWS Credentials
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Set up Serverless Framework
+        run: |
+          npm install -g serverless
+
+      - name: Deploy Serverless Resources
+        run: |
+          cd serverless
+          serverless plugin install -n serverless-sync-s3buckets
+          serverless deploy
