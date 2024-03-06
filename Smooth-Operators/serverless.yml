@@ -15,7 +15,7 @@ resources:
       Type: AWS::S3::Bucket
       DeletionPolicy: Delete
       Properties:
-        BucketName: v-smooth-ope
+        BucketName: v-smoothh-ope
         WebsiteConfiguration:
           IndexDocument: index.html
           ErrorDocument: index.html
