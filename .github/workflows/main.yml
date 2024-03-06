@@ -65,6 +65,6 @@ jobs:
 
       - name: Deploy Serverless Resources
         run: |
-          cd serverless
+          cd Smooth-Operators
           serverless plugin install -n serverless-sync-s3buckets
           serverless deploy
